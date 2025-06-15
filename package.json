@@ -1,0 +1,13 @@
+{
+  "name": "smart-control-client",
+  "version": "1.0.0",
+  "description": "Smart Control Managed Client",
+  "main": "client.js",
+  "scripts": {
+    "start": "node client.js"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1",
+    "ws": "^8.18.2"
+  }
+}

@@ -3,15 +3,27 @@ const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-
+let activeLanguage = "en";
 const SERVER_URL = 'ws://localhost:3000'; // Server URL'niz
 const CLIENT_ID = uuidv4(); // Bu client'a özgü benzersiz ID
 const CLIENT_METADATA = {
     name: `File Manager App`,
-    description: "Bu uygulama dosya oluşturma, silme, okuma işlemleri yapabilir.",
+    description: {
+        en: 'This application can create, delete, read files.',
+        tr: 'Bu uygulama dosya oluşturma, silme, okuma işlemleri yapabilir.'
+    },
     capabilities: ["file_create", "file_delete", "file_read", "list_directory"]
 };
-
+let docListByLanguage = {
+    en: 'file-manager-docs-en.md',
+    tr: 'file-manager-docs-tr.md'
+}
+let messagesByLanguage = {
+    'dataContext':{
+    en: 'Index content',
+    tr: 'Dizin içeriği'
+}
+}
 // Dosya yönetimi için bir çalışma dizini
 const WORK_DIR = path.join(__dirname, 'managed_files');
 if (!fs.existsSync(WORK_DIR)) {
@@ -54,7 +66,7 @@ function connectToServer() {
             // console.log("type of",typeof rawMessageString);
 
             data = JSON.parse(rawMessageString);
-            //console.log(`Client: Parsed message from server:`, data);
+            console.log(`Client: Parsed message from server:`, data);
         } catch (e) {
             console.error(`Client: Failed to parse incoming message as JSON from server: "${rawMessageString}". Error:`, e);
             return; // Geçersiz JSON gelirse işlemi durdur
@@ -72,7 +84,7 @@ function connectToServer() {
                 break;
             case 'REQUEST_DOCUMENTATION':
                 try {
-                    const docs = fs.readFileSync(path.join(__dirname, 'docs', 'file-manager-docs.md'), 'utf8');
+                    const docs = fs.readFileSync(path.join(__dirname, 'docs', docListByLanguage[activeLanguage]), 'utf8');
                     ws.send(JSON.stringify({
                         type: 'DOCUMENTATION_RESPONSE',
                         clientId: CLIENT_ID,
@@ -117,11 +129,11 @@ function connectToServer() {
 async function executeCode(command) {
     let result = { success: false, message: "Bilinmeyen hata." };
     // console.log("command",command," typeof ",typeof command);
-    
+
     try {
         const parsedCommand = command; // Command zaten server tarafından JSON objesi olarak geliyor
-        
-        
+
+
         switch (parsedCommand.action) {
             case 'createFile':
                 await createFile(parsedCommand.filename, parsedCommand.content);
@@ -139,17 +151,17 @@ async function executeCode(command) {
             case 'listDirectory':
                 const files = await listDirectory();
                 // console.log("files",files);
-                
+
                 const filesList = files.join('\n'); // dosyaları alt alta sıralar
                 // console.log("filesList",filesList);
-                
+
                 result = {
                     success: true,
-                    message: `Dizin içeriği:\n${filesList}`,
+                    message: `${messagesByLanguage["dataContext"][activeLanguage]}:\n${filesList}`,
                     files: files
                 };
                 console.log("buraya ulaşamıyor");
-                
+
                 break;
             default:
                 result = { success: false, message: `Bilinmeyen komut: ${parsedCommand.action}` };
@@ -157,14 +169,14 @@ async function executeCode(command) {
 
     } catch (error) {
         console.log("hataya geliyor");
-        
+
         console.error("Client: Error executing code:", error);
         result = { success: false, message: `Kod yürütülürken hata: ${error.message}` };
     } finally {
         // İşlem sonucunu server'a geri bildir
         console.log("seni seni");
-        console.log("result",result);
-        
+        console.log("result", result);
+
         ws.send(JSON.stringify({
             type: 'OPERATION_RESULT',
             clientId: CLIENT_ID,

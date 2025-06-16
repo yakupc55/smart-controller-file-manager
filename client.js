@@ -116,9 +116,12 @@ function connectToServer() {
 // Bu fonksiyon zaten güvenli bir şekilde komutları işliyor.
 async function executeCode(command) {
     let result = { success: false, message: "Bilinmeyen hata." };
+    // console.log("command",command," typeof ",typeof command);
+    
     try {
         const parsedCommand = command; // Command zaten server tarafından JSON objesi olarak geliyor
-
+        
+        
         switch (parsedCommand.action) {
             case 'createFile':
                 await createFile(parsedCommand.filename, parsedCommand.content);
@@ -135,22 +138,33 @@ async function executeCode(command) {
             // şuan için sadece bu kısım çalışıyor
             case 'listDirectory':
                 const files = await listDirectory();
+                // console.log("files",files);
+                
                 const filesList = files.join('\n'); // dosyaları alt alta sıralar
-                const result = {
+                // console.log("filesList",filesList);
+                
+                result = {
                     success: true,
                     message: `Dizin içeriği:\n${filesList}`,
                     files: files
                 };
+                console.log("buraya ulaşamıyor");
+                
                 break;
             default:
                 result = { success: false, message: `Bilinmeyen komut: ${parsedCommand.action}` };
         }
 
     } catch (error) {
+        console.log("hataya geliyor");
+        
         console.error("Client: Error executing code:", error);
         result = { success: false, message: `Kod yürütülürken hata: ${error.message}` };
     } finally {
         // İşlem sonucunu server'a geri bildir
+        console.log("seni seni");
+        console.log("result",result);
+        
         ws.send(JSON.stringify({
             type: 'OPERATION_RESULT',
             clientId: CLIENT_ID,
